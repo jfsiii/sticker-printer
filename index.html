@@ -8,90 +8,15 @@
     />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>✨ Magic Printer - For Kids!</title>
+    <title>✨ Sticker Printer ✨</title>
     <link rel="stylesheet" href="./src/styles/main.css" />
   </head>
   <body>
     <div class="header">
-      <h1>✨ Magic Printer ✨</h1>
+      <h1>✨ Sticker Printer ✨</h1>
     </div>
 
-    <div class="modal-overlay" id="modalOverlay"></div>
-
-    <!-- Text input modal -->
-    <div class="text-tools" id="textTools">
-      <input type="text" id="textInput" placeholder="Type your message..." />
-      <button class="tool-btn primary" onclick="addText()">Add Text</button>
-      <button class="tool-btn danger" onclick="closeTextTools()">Cancel</button>
-    </div>
-
-    <!-- AI generation modal -->
-    <div class="text-tools" id="aiTools">
-      <h3 style="margin: 0 0 10px 0; color: #667eea">✨ AI Magic Draw</h3>
-      <input
-        type="text"
-        id="aiPrompt"
-        placeholder="Describe what to draw... (e.g., 'a cute dinosaur')"
-      />
-      <div
-        id="aiStatus"
-        style="
-          display: none;
-          padding: 10px;
-          background: #e7f3ff;
-          border-radius: 8px;
-          margin: 10px 0;
-          text-align: center;
-        "
-      >
-        Generating your image... ✨
-      </div>
-      <button class="tool-btn success" onclick="generateAIImage()">
-        🎨 Generate!
-      </button>
-      <button class="tool-btn danger" onclick="closeAITools()">Cancel</button>
-    </div>
-
-    <!-- Save/Print options modal -->
-    <div id="printOptionsModal" class="modal">
-      <h2>🖨️ Save or Print?</h2>
-      <button class="tool-btn primary" onclick="saveImageOnly()">
-        💾 Save Image
-      </button>
-      <button
-        id="printOnlyBtn"
-        class="tool-btn success"
-        onclick="printImageOnly()"
-        style="display: none"
-      >
-        🖨️ Print to Printer
-      </button>
-      <button
-        id="saveAndPrintBtn"
-        class="tool-btn success"
-        onclick="saveAndPrint()"
-        style="display: none"
-      >
-        💾🖨️ Save & Print
-      </button>
-      <button class="tool-btn danger" onclick="closePrintOptionsModal()">
-        Cancel
-      </button>
-    </div>
-
-    <!-- Status/Progress modal -->
-    <div id="statusModal" class="modal">
-      <h2 id="statusTitle">Processing...</h2>
-      <div id="statusMessage" class="modal-message"></div>
-      <button
-        id="statusCloseBtn"
-        class="tool-btn primary"
-        onclick="closeStatusModal()"
-        style="display: none"
-      >
-        OK
-      </button>
-    </div>
+    <!-- All modals are now created dynamically as app-modal components -->
 
     <div class="canvas-container">
       <canvas id="drawingCanvas"></canvas>

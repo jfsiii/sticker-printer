@@ -18,14 +18,11 @@ export class AIManager {
    * Generate an image from a text prompt using AI
    * @param {string} prompt - The text description of what to generate
    * @returns {Promise<HTMLImageElement>} The generated image element
-   * @throws {Error} If AI status element not found or image generation fails
+   * @throws {Error} If image generation fails
    */
   async generateImage(prompt) {
-    const aiStatus = document.getElementById('aiStatus');
-    if (!aiStatus) {
-      throw new Error('AI status element not found');
-    }
-    aiStatus.style.display = 'block';
+    // Show loading status
+    this.modalManager.showStatus('✨ Generating...', 'Creating your image...');
 
     return new Promise((resolve, reject) => {
       try {
@@ -39,18 +36,18 @@ export class AIManager {
         img.crossOrigin = 'anonymous';
 
         img.onload = () => {
-          aiStatus.style.display = 'none';
+          this.modalManager.closeStatus();
           resolve(img);
         };
 
         img.onerror = () => {
-          aiStatus.style.display = 'none';
+          this.modalManager.closeStatus();
           reject(new Error('Could not generate image. Try a different description!'));
         };
 
         img.src = imageUrl;
       } catch (error) {
-        aiStatus.style.display = 'none';
+        this.modalManager.closeStatus();
         reject(error);
       }
     });

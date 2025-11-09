@@ -1,5 +1,7 @@
+import { html, render } from 'lit';
 import { PRINTER_CONFIG } from './constants.js';
 import { ModalManager } from './modals.js';
+import { AppModal } from '../components/app-modal.js';
 
 /**
  * Manages camera capture and video preview
@@ -58,54 +60,97 @@ export class CameraManager {
   /**
    * Show camera preview modal with capture button
    * @returns {void}
-   * @throws {Error} If status modal elements or preview video element not found
    */
   showCameraPreview() {
-    this.modalManager.showStatus('📷 Camera Ready', 'Position and tap Capture');
-
-    const statusTitle = document.getElementById('statusTitle');
-    const statusMessage = document.getElementById('statusMessage');
-    const statusCloseBtn = document.getElementById('statusCloseBtn');
-
-    if (!statusTitle || !statusMessage || !statusCloseBtn) {
-      throw new Error('Status modal elements not found');
+    // Create or get camera modal
+    let modal = /** @type {AppModal | null} */ (
+      document.getElementById('cameraModal')
+    );
+    if (!modal) {
+      modal = /** @type {AppModal} */ (document.createElement('app-modal'));
+      modal.id = 'cameraModal';
+      modal.title = '📷 Camera Ready';
+      modal.message = 'Position and tap Capture';
+      document.body.appendChild(modal);
     }
 
-    statusTitle.innerHTML = '📷 Camera';
-    statusMessage.innerHTML = `<video id="previewVideo" style="width: 100%; max-width: 300px; border-radius: 8px; margin: 10px 0;" playsinline autoplay muted></video>`;
-    statusCloseBtn.textContent = '✓ Capture';
-    statusCloseBtn.style.display = 'block';
+    // Render content using Lit template
+    render(
+      html`
+        <video
+          id="previewVideo"
+          style="width: 100%; max-width: 300px; border-radius: 8px; margin: 10px 0;"
+          playsinline
+          autoplay
+          muted
+        ></video>
+        <button
+          class="success"
+          slot="actions"
+          @click=${() => this.handleCapture()}
+        >
+          ✓ Capture
+        </button>
+        <button
+          class="danger"
+          slot="actions"
+          @click=${() => {
+            this.stopStream();
+            modal.open = false;
+          }}
+        >
+          Cancel
+        </button>
+      `,
+      modal
+    );
 
-    const previewVideo = document.getElementById('previewVideo');
-    if (!(previewVideo instanceof HTMLVideoElement)) {
-      throw new Error('Preview video element not found');
+    // Set up preview video
+    const previewVideo = /** @type {HTMLVideoElement | null} */ (
+      document.getElementById('previewVideo')
+    );
+    if (previewVideo) {
+      previewVideo.srcObject = this.currentStream;
+      previewVideo.onloadedmetadata = () => previewVideo.play();
     }
-    previewVideo.srcObject = this.currentStream;
-    previewVideo.onloadedmetadata = () => previewVideo.play();
 
-    statusCloseBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    modal.open = true;
+  }
 
-      try {
-        const img = this.captureFrame(previewVideo);
+  /**
+   * Handle capture button click
+   * @returns {void}
+   */
+  handleCapture() {
+    const previewVideo = /** @type {HTMLVideoElement | null} */ (
+      document.getElementById('previewVideo')
+    );
+    if (!previewVideo) {
+      this.modalManager.showStatusWithClose('❌ Error', 'Preview video not found');
+      return;
+    }
 
-        // Call the callback with the captured image
-        if (this.onImageCaptured) {
-          this.onImageCaptured(img);
-        }
+    try {
+      const img = this.captureFrame(previewVideo);
 
-        this.modalManager.closeStatus();
-        this.modalManager.showStatusWithClose('✅ Photo Captured!', 'Ready to save or print');
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        this.modalManager.showStatusWithClose('❌ Error', message);
+      // Call the callback with the captured image
+      if (this.onImageCaptured) {
+        this.onImageCaptured(img);
       }
 
-      // Reset the close button
-      statusCloseBtn.textContent = 'OK';
-      statusCloseBtn.onclick = () => this.modalManager.closeStatus();
-    };
+      // Close camera modal
+      const cameraModal = /** @type {AppModal | null} */ (
+        document.getElementById('cameraModal')
+      );
+      if (cameraModal) {
+        cameraModal.open = false;
+      }
+
+      this.modalManager.showStatusWithClose('✅ Photo Captured!', 'Ready to save or print');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.modalManager.showStatusWithClose('❌ Error', message);
+    }
   }
 
   /**

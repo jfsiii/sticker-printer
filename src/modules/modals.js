@@ -1,55 +1,16 @@
+import { html, render } from 'lit';
+import { AppModal } from '../components/app-modal.js';
+
 /**
  * Manages modal dialogs and overlays
  */
 export class ModalManager {
-  /** @type {HTMLElement} */
-  modalOverlay;
-
-  /** @type {HTMLElement} */
-  statusModal;
-
-  /** @type {HTMLElement} */
-  statusTitle;
-
-  /** @type {HTMLElement} */
-  statusMessage;
-
-  /** @type {HTMLElement} */
-  statusCloseBtn;
-
   /**
    * @throws {Error} If required modal elements are not found in DOM
    */
   constructor() {
-    const modalOverlay = document.getElementById('modalOverlay');
-    const statusModal = document.getElementById('statusModal');
-    const statusTitle = document.getElementById('statusTitle');
-    const statusMessage = document.getElementById('statusMessage');
-    const statusCloseBtn = document.getElementById('statusCloseBtn');
-
-    if (!modalOverlay || !statusModal || !statusTitle || !statusMessage || !statusCloseBtn) {
-      throw new Error('Required modal elements not found in DOM');
-    }
-
-    this.modalOverlay = modalOverlay;
-    this.statusModal = statusModal;
-    this.statusTitle = statusTitle;
-    this.statusMessage = statusMessage;
-    this.statusCloseBtn = statusCloseBtn;
-
-    this.setupOverlayClickHandler();
-  }
-
-  /**
-   * Set up click handler for overlay to close modals
-   * @returns {void}
-   */
-  setupOverlayClickHandler() {
-    this.modalOverlay.addEventListener('click', (e) => {
-      if (e.target === this.modalOverlay) {
-        this.closeAll();
-      }
-    });
+    // No longer need modalOverlay or statusModal references
+    // Modals are self-contained now
   }
 
   /**
@@ -59,11 +20,14 @@ export class ModalManager {
    * @returns {void}
    */
   showStatus(title, message) {
-    this.statusTitle.textContent = title;
-    this.statusMessage.textContent = message;
-    this.statusCloseBtn.style.display = 'none';
-    this.statusModal.classList.add('active');
-    this.modalOverlay.classList.add('active');
+    const modal = this._getOrCreateStatusModal();
+    modal.title = title;
+    modal.message = message;
+
+    // Clear any existing content
+    render(html``, modal);
+
+    modal.open = true;
   }
 
   /**
@@ -73,11 +37,25 @@ export class ModalManager {
    * @returns {void}
    */
   showStatusWithClose(title, message) {
-    this.statusTitle.textContent = title;
-    this.statusMessage.textContent = message;
-    this.statusCloseBtn.style.display = 'block';
-    this.statusModal.classList.add('active');
-    this.modalOverlay.classList.add('active');
+    const modal = this._getOrCreateStatusModal();
+    modal.title = title;
+    modal.message = message;
+
+    // Render close button using Lit template
+    render(
+      html`
+        <button
+          class="primary"
+          slot="actions"
+          @click=${() => this.closeStatus()}
+        >
+          OK
+        </button>
+      `,
+      modal
+    );
+
+    modal.open = true;
   }
 
   /**
@@ -85,125 +63,208 @@ export class ModalManager {
    * @returns {void}
    */
   closeStatus() {
-    this.statusModal.classList.remove('active');
-    this.modalOverlay.classList.remove('active');
+    const modal = /** @type {AppModal | null} */ (document.getElementById('statusModal'));
+    if (modal) {
+      modal.open = false;
+    }
+  }
+
+  /**
+   * Get or create the status modal
+   * @returns {AppModal}
+   */
+  _getOrCreateStatusModal() {
+    let modal = /** @type {AppModal | null} */ (document.getElementById('statusModal'));
+    if (!modal) {
+      modal = /** @type {AppModal} */ (document.createElement('app-modal'));
+      modal.id = 'statusModal';
+      document.body.appendChild(modal);
+    }
+    return modal;
   }
 
   /**
    * Show the text input modal
    * @returns {void}
-   * @throws {Error} If text tools element not found
    */
   showTextTools() {
-    const textTools = document.getElementById('textTools');
-    if (!textTools) {
-      throw new Error('Text tools element not found');
+    let modal = /** @type {AppModal | null} */ (document.getElementById('textToolsModal'));
+    if (!modal) {
+      modal = /** @type {AppModal} */ (document.createElement('app-modal'));
+      modal.id = 'textToolsModal';
+      document.body.appendChild(modal);
     }
-    textTools.classList.add('active');
-    this.modalOverlay.classList.add('active');
 
-    const textInput = document.getElementById('textInput');
-    if (textInput instanceof HTMLInputElement || textInput instanceof HTMLTextAreaElement) {
-      textInput.focus();
-    }
+    // Render content using Lit template
+    render(
+      html`
+        <input
+          type="text"
+          id="textInput"
+          placeholder="Type your message..."
+        />
+        <button
+          class="primary"
+          slot="actions"
+          @click=${() => window.addText()}
+        >
+          Add Text
+        </button>
+        <button
+          class="danger"
+          slot="actions"
+          @click=${() => this.closeTextTools()}
+        >
+          Cancel
+        </button>
+      `,
+      modal
+    );
+
+    modal.open = true;
+    // Focus input after modal opens
+    setTimeout(() => {
+      const input = document.getElementById('textInput');
+      if (input) input.focus();
+    }, 100);
   }
 
   /**
    * Close the text input modal
    * @returns {void}
-   * @throws {Error} If text tools element not found
    */
   closeTextTools() {
-    const textTools = document.getElementById('textTools');
-    if (!textTools) {
-      throw new Error('Text tools element not found');
+    const modal = /** @type {AppModal | null} */ (document.getElementById('textToolsModal'));
+    if (modal) {
+      modal.open = false;
     }
-    textTools.classList.remove('active');
-    this.modalOverlay.classList.remove('active');
   }
 
   /**
    * Show the AI generation modal
    * @returns {void}
-   * @throws {Error} If AI tools element not found
    */
   showAITools() {
-    const aiTools = document.getElementById('aiTools');
-    if (!aiTools) {
-      throw new Error('AI tools element not found');
+    let modal = /** @type {AppModal | null} */ (document.getElementById('aiToolsModal'));
+    if (!modal) {
+      modal = /** @type {AppModal} */ (document.createElement('app-modal'));
+      modal.id = 'aiToolsModal';
+      modal.title = '✨ AI Magic Draw';
+      document.body.appendChild(modal);
     }
-    aiTools.classList.add('active');
-    this.modalOverlay.classList.add('active');
 
-    const aiPrompt = document.getElementById('aiPrompt');
-    if (aiPrompt instanceof HTMLInputElement || aiPrompt instanceof HTMLTextAreaElement) {
-      aiPrompt.focus();
-    }
+    // Render content using Lit template
+    render(
+      html`
+        <input
+          type="text"
+          id="aiPrompt"
+          placeholder="Describe what to draw... (e.g., 'a cute dinosaur')"
+        />
+        <button
+          class="success"
+          slot="actions"
+          @click=${() => window.generateAIImage()}
+        >
+          🎨 Generate!
+        </button>
+        <button
+          class="danger"
+          slot="actions"
+          @click=${() => this.closeAITools()}
+        >
+          Cancel
+        </button>
+      `,
+      modal
+    );
+
+    modal.open = true;
+    // Focus input after modal opens
+    setTimeout(() => {
+      const input = document.getElementById('aiPrompt');
+      if (input) input.focus();
+    }, 100);
   }
 
   /**
    * Close the AI generation modal
    * @returns {void}
-   * @throws {Error} If AI tools element not found
    */
   closeAITools() {
-    const aiTools = document.getElementById('aiTools');
-    if (!aiTools) {
-      throw new Error('AI tools element not found');
+    const modal = /** @type {AppModal | null} */ (document.getElementById('aiToolsModal'));
+    if (modal) {
+      modal.open = false;
     }
-    aiTools.classList.remove('active');
-    this.modalOverlay.classList.remove('active');
   }
 
   /**
    * Show print options modal
    * @param {boolean} isPrinterConnected - Whether a printer is connected
    * @returns {void}
-   * @throws {Error} If print options modal or button elements not found
    */
   showPrintOptions(isPrinterConnected) {
-    const printOptionsModal = document.getElementById('printOptionsModal');
-    if (!printOptionsModal) {
-      throw new Error('Print options modal not found');
+    let modal = /** @type {AppModal | null} */ (document.getElementById('printOptionsModal'));
+    if (!modal) {
+      modal = /** @type {AppModal} */ (document.createElement('app-modal'));
+      modal.id = 'printOptionsModal';
+      document.body.appendChild(modal);
     }
 
-    const printOnlyBtn = document.getElementById('printOnlyBtn');
-    const saveAndPrintBtn = document.getElementById('saveAndPrintBtn');
-    if (!printOnlyBtn || !saveAndPrintBtn) {
-      throw new Error('Print buttons not found');
-    }
+    // Update title based on printer connection
+    modal.title = isPrinterConnected ? '🖨️ What do you want to do?' : '💾 Save Image?';
 
-    const modalTitle = printOptionsModal.querySelector('h2');
-    if (!modalTitle) {
-      throw new Error('Modal title not found');
-    }
+    // Render content using Lit template with conditional buttons
+    render(
+      html`
+        <button
+          class="primary"
+          slot="actions"
+          @click=${() => window.saveImageOnly()}
+        >
+          💾 Save Image
+        </button>
+        ${isPrinterConnected
+          ? html`
+              <button
+                class="success"
+                slot="actions"
+                @click=${() => window.printImageOnly()}
+              >
+                🖨️ Print to Printer
+              </button>
+              <button
+                class="success"
+                slot="actions"
+                @click=${() => window.saveAndPrint()}
+              >
+                💾🖨️ Save & Print
+              </button>
+            `
+          : ''}
+        <button
+          class="danger"
+          slot="actions"
+          @click=${() => this.closePrintOptions()}
+        >
+          Cancel
+        </button>
+      `,
+      modal
+    );
 
-    if (isPrinterConnected) {
-      printOnlyBtn.style.display = 'block';
-      saveAndPrintBtn.style.display = 'block';
-      modalTitle.textContent = '🖨️ What do you want to do?';
-    } else {
-      printOnlyBtn.style.display = 'none';
-      saveAndPrintBtn.style.display = 'none';
-      modalTitle.textContent = '💾 Save Image?';
-    }
-
-    printOptionsModal.classList.add('active');
-    this.modalOverlay.classList.add('active');
+    modal.open = true;
   }
 
   /**
    * Close the print options modal
    * @returns {void}
-   * @throws {Error} If print options modal not found
    */
   closePrintOptions() {
-    const printOptionsModal = document.getElementById('printOptionsModal');
-    if (!printOptionsModal) {
-      throw new Error('Print options modal not found');
+    const modal = /** @type {AppModal | null} */ (document.getElementById('printOptionsModal'));
+    if (modal) {
+      modal.open = false;
     }
-    printOptionsModal.classList.remove('active');
-    this.modalOverlay.classList.remove('active');
   }
 
   /**
@@ -211,21 +272,9 @@ export class ModalManager {
    * @returns {void}
    */
   closeAll() {
-    const textTools = document.getElementById('textTools');
-    const aiTools = document.getElementById('aiTools');
-    const printOptionsModal = document.getElementById('printOptionsModal');
-
-    if (textTools) {
-      textTools.classList.remove('active');
-    }
-    if (aiTools) {
-      aiTools.classList.remove('active');
-    }
-    if (printOptionsModal) {
-      printOptionsModal.classList.remove('active');
-    }
-
-    this.statusModal.classList.remove('active');
-    this.modalOverlay.classList.remove('active');
+    this.closeStatus();
+    this.closeTextTools();
+    this.closeAITools();
+    this.closePrintOptions();
   }
 }

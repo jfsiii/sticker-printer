@@ -26,20 +26,16 @@ export class PrinterManager {
    */
   async connect() {
     try {
-      console.log('Requesting Bluetooth device...');
       this.device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: [PRINTER_CONFIG.SERVICE_UUID],
       });
 
-      console.log('Device selected:', this.device.name);
       if (!this.device.gatt) {
         throw new Error('GATT server not available');
       }
       const server = await this.device.gatt.connect();
-      console.log('Connected to GATT server');
       const services = await server.getPrimaryServices();
-      console.log('Found services:', services.length);
 
       let service = null;
       for (const s of services) {
@@ -47,7 +43,6 @@ export class PrinterManager {
           const char = await s.getCharacteristic(PRINTER_CONFIG.WRITE_CHAR_UUID);
           if (char) {
             service = s;
-            console.log('Found printer service!');
             break;
           }
         } catch (e) {
@@ -56,27 +51,23 @@ export class PrinterManager {
       }
 
       if (!service) {
-        console.error('Could not find printer service');
         throw new Error('Could not find printer service');
       }
 
       this.writeCharacteristic = await service.getCharacteristic(
         PRINTER_CONFIG.WRITE_CHAR_UUID
       );
-      console.log('Got write characteristic');
 
       try {
         const notifyChar = await service.getCharacteristic(
           PRINTER_CONFIG.NOTIFY_CHAR_UUID
         );
         await notifyChar.startNotifications();
-        console.log('Started notifications');
       } catch (e) {
-        console.log('Notifications not available (optional)');
+        // Notifications not available (optional)
       }
 
       this.isConnected = true;
-      console.log('Connection successful!');
       return this.device.name || 'Phomemo';
     } catch (error) {
       this.isConnected = false;
@@ -108,24 +99,12 @@ export class PrinterManager {
       throw new Error('Printer not connected');
     }
 
-    console.log(
-      `Sending ${data.length} bytes in ${Math.ceil(data.length / PRINTER_CONFIG.MTU_SIZE)} chunks of ${PRINTER_CONFIG.MTU_SIZE} bytes`
-    );
-
     for (let i = 0; i < data.length; i += PRINTER_CONFIG.MTU_SIZE) {
       const chunk = data.slice(i, i + PRINTER_CONFIG.MTU_SIZE);
-      try {
-        await this.writeCharacteristic.writeValue(new Uint8Array(chunk));
-        // Small delay between writes to ensure printer processes each chunk
-        await new Promise((resolve) => setTimeout(resolve, 5));
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(`Chunk write failed at offset ${i}:`, message);
-        throw error;
-      }
+      await this.writeCharacteristic.writeValue(new Uint8Array(chunk));
+      // Small delay between writes to ensure printer processes each chunk
+      await new Promise((resolve) => setTimeout(resolve, 5));
     }
-
-    console.log('All data sent');
   }
 
   /**
