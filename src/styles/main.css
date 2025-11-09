@@ -204,7 +204,8 @@ body {
 }
 
 .modal.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal button {
