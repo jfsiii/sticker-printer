@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>✨ Magic Printer - For Kids!</title>
+    <link rel="stylesheet" href="./src/styles/main.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>✨ Magic Printer ✨</h1>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay"></div>
+
+    <!-- Text input modal -->
+    <div class="text-tools" id="textTools">
+      <input type="text" id="textInput" placeholder="Type your message..." />
+      <button class="tool-btn primary" onclick="addText()">Add Text</button>
+      <button class="tool-btn danger" onclick="closeTextTools()">Cancel</button>
+    </div>
+
+    <!-- AI generation modal -->
+    <div class="text-tools" id="aiTools">
+      <h3 style="margin: 0 0 10px 0; color: #667eea">✨ AI Magic Draw</h3>
+      <input
+        type="text"
+        id="aiPrompt"
+        placeholder="Describe what to draw... (e.g., 'a cute dinosaur')"
+      />
+      <div
+        id="aiStatus"
+        style="
+          display: none;
+          padding: 10px;
+          background: #e7f3ff;
+          border-radius: 8px;
+          margin: 10px 0;
+          text-align: center;
+        "
+      >
+        Generating your image... ✨
+      </div>
+      <button class="tool-btn success" onclick="generateAIImage()">
+        🎨 Generate!
+      </button>
+      <button class="tool-btn danger" onclick="closeAITools()">Cancel</button>
+    </div>
+
+    <!-- Save/Print options modal -->
+    <div id="printOptionsModal" class="modal">
+      <h2>🖨️ Save or Print?</h2>
+      <button class="tool-btn primary" onclick="saveImageOnly()">
+        💾 Save Image
+      </button>
+      <button
+        id="printOnlyBtn"
+        class="tool-btn success"
+        onclick="printImageOnly()"
+        style="display: none"
+      >
+        🖨️ Print to Printer
+      </button>
+      <button
+        id="saveAndPrintBtn"
+        class="tool-btn success"
+        onclick="saveAndPrint()"
+        style="display: none"
+      >
+        💾🖨️ Save & Print
+      </button>
+      <button class="tool-btn danger" onclick="closePrintOptionsModal()">
+        Cancel
+      </button>
+    </div>
+
+    <!-- Status/Progress modal -->
+    <div id="statusModal" class="modal">
+      <h2 id="statusTitle">Processing...</h2>
+      <div id="statusMessage" class="modal-message"></div>
+      <button
+        id="statusCloseBtn"
+        class="tool-btn primary"
+        onclick="closeStatusModal()"
+        style="display: none"
+      >
+        OK
+      </button>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="drawingCanvas"></canvas>
+    </div>
+
+    <div class="toolbar">
+      <input
+        type="color"
+        class="color-picker"
+        id="colorPicker"
+        value="#000000"
+      />
+
+      <div class="size-group">
+        <div class="size-btn active" id="sizeS">S</div>
+        <div class="size-btn" id="sizeM">M</div>
+        <div class="size-btn" id="sizeL">L</div>
+      </div>
+
+      <button class="tool-btn danger" onclick="clearCanvas()">
+        🗑️ Clear
+      </button>
+      <button class="tool-btn primary" onclick="showTextTools()">
+        📝 Add Text
+      </button>
+      <button class="tool-btn primary" onclick="showAITools()">
+        ✨ AI Draw
+      </button>
+      <button class="tool-btn primary" id="connectPrinterBtn">
+        📱 Connect Printer
+      </button>
+      <button
+        class="tool-btn danger"
+        id="disconnectPrinterBtn"
+        style="display: none"
+      >
+        📱 Disconnect
+      </button>
+      <button class="tool-btn success" id="printOptionsBtn">
+        🖨️ Save/Print
+      </button>
+      <button class="tool-btn primary" onclick="captureCamera()">
+        📷 Take Photo
+      </button>
+      <button class="tool-btn primary" onclick="uploadImage()">
+        🖼️ Upload Image
+      </button>
+    </div>
+
+    <div id="printerStatus" class="disconnected">Printer: Not Connected</div>
+
+    <!-- Hidden file input for image upload -->
+    <input type="file" id="imageInput" accept="image/*" style="display: none" />
+    <!-- Hidden video element for camera -->
+    <video id="cameraVideo" style="display: none"></video>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

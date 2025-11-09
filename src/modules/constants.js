@@ -1,0 +1,25 @@
+export const PRINTER_CONFIG = {
+  WRITE_CHAR_UUID: '0000ff02-0000-1000-8000-00805f9b34fb',
+  NOTIFY_CHAR_UUID: '0000ff03-0000-1000-8000-00805f9b34fb',
+  SERVICE_UUID: '0000ff00-0000-1000-8000-00805f9b34fb',
+  WIDTH: 384,
+  BYTES_PER_LINE: 48,
+  MTU_SIZE: 150,
+  LINES_PER_CHUNK: 8,
+};
+
+export const COMMANDS = {
+  ESC: 0x1b,
+  GS: 0x1d,
+};
+
+export const CANVAS_CONFIG = {
+  WIDTH: 384,
+  HEIGHT: 500,
+};
+
+export const DRAWING_SIZES = {
+  SMALL: 2,
+  MEDIUM: 5,
+  LARGE: 10,
+};

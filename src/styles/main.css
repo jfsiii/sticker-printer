@@ -1,0 +1,246 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  touch-action: none;
+  overflow: hidden;
+}
+
+.header {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.header h1 {
+  text-align: center;
+  color: #667eea;
+  font-size: 22px;
+  margin: 0;
+}
+
+.canvas-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#drawingCanvas {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  cursor: crosshair;
+  display: block;
+  width: 100%;
+  max-width: 384px;
+  height: auto;
+  aspect-ratio: 384 / 500;
+  touch-action: none;
+}
+
+.toolbar {
+  background: rgba(255, 255, 255, 0.98);
+  padding: 8px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tool-btn {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.tool-btn:active {
+  transform: scale(0.95);
+}
+
+.tool-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tool-btn.primary {
+  background: #667eea;
+  color: white;
+}
+
+.tool-btn.danger {
+  background: #f56565;
+  color: white;
+}
+
+.tool-btn.success {
+  background: #48bb78;
+  color: white;
+}
+
+.color-picker {
+  width: 40px;
+  height: 40px;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.size-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 6px 10px;
+  border-radius: 18px;
+  flex-shrink: 0;
+}
+
+.size-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #667eea;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 12px;
+  color: #667eea;
+}
+
+.size-btn.active {
+  background: #667eea;
+  color: white;
+}
+
+.text-tools {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  max-width: 90vw;
+}
+
+.text-tools.active {
+  display: flex;
+}
+
+.text-tools input {
+  padding: 12px;
+  font-size: 18px;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-family: inherit;
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.modal-overlay.active {
+  display: block;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 1002;
+  text-align: center;
+  max-width: 90vw;
+}
+
+.modal.active {
+  display: block;
+}
+
+.modal button {
+  margin: 10px 5px;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+.modal h2 {
+  margin-bottom: 15px;
+  color: #667eea;
+}
+
+.modal-message {
+  margin: 15px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+#printerStatus {
+  position: relative;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  text-align: center;
+  margin-top: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 12px;
+}
+
+#printerStatus.connected {
+  background: #d4edda;
+  color: #155724;
+}
+
+#printerStatus.disconnected {
+  background: #fff3cd;
+  color: #856404;
+}
