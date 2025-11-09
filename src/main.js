@@ -7,9 +7,53 @@ import { CameraManager } from './modules/camera.js';
 import { ImageManager } from './modules/image.js';
 import { DRAWING_SIZES } from './modules/constants.js';
 
+/**
+ * Main application class that coordinates all modules
+ */
 class StickerPrinterApp {
+  /** @type {HTMLCanvasElement} */
+  canvas;
+
+  /** @type {DrawingManager} */
+  drawingManager;
+
+  /** @type {PrinterManager} */
+  printerManager;
+
+  /** @type {ModalManager} */
+  modalManager;
+
+  /** @type {AIManager} */
+  aiManager;
+
+  /** @type {CameraManager} */
+  cameraManager;
+
+  /** @type {ImageManager} */
+  imageManager;
+
+  /** @type {HTMLElement} */
+  printerStatus;
+
+  /** @type {HTMLElement} */
+  connectPrinterBtn;
+
+  /** @type {HTMLElement} */
+  disconnectPrinterBtn;
+
+  /** @type {HTMLElement} */
+  printOptionsBtn;
+
+  /**
+   * @throws {Error} If canvas element not found
+   */
   constructor() {
-    this.canvas = document.getElementById('drawingCanvas');
+    const canvas = document.getElementById('drawingCanvas');
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      throw new Error('Drawing canvas element not found');
+    }
+    this.canvas = canvas;
+
     this.drawingManager = new DrawingManager(this.canvas);
     this.printerManager = new PrinterManager();
     this.modalManager = new ModalManager();
@@ -17,35 +61,74 @@ class StickerPrinterApp {
     this.cameraManager = new CameraManager(this.modalManager);
     this.imageManager = new ImageManager();
 
+    this.printerStatus = document.createElement('div');
+    this.connectPrinterBtn = document.createElement('button');
+    this.disconnectPrinterBtn = document.createElement('button');
+    this.printOptionsBtn = document.createElement('button');
+
     this.initUI();
     this.setupEventHandlers();
   }
 
+  /**
+   * Initialize UI elements
+   * @returns {void}
+   * @throws {Error} If required UI elements not found
+   */
   initUI() {
-    this.printerStatus = document.getElementById('printerStatus');
-    this.connectPrinterBtn = document.getElementById('connectPrinterBtn');
-    this.disconnectPrinterBtn = document.getElementById('disconnectPrinterBtn');
-    this.printOptionsBtn = document.getElementById('printOptionsBtn');
+    const printerStatus = document.getElementById('printerStatus');
+    const connectPrinterBtn = document.getElementById('connectPrinterBtn');
+    const disconnectPrinterBtn = document.getElementById('disconnectPrinterBtn');
+    const printOptionsBtn = document.getElementById('printOptionsBtn');
+
+    if (!printerStatus || !connectPrinterBtn || !disconnectPrinterBtn || !printOptionsBtn) {
+      throw new Error('Required UI elements not found');
+    }
+
+    this.printerStatus = printerStatus;
+    this.connectPrinterBtn = connectPrinterBtn;
+    this.disconnectPrinterBtn = disconnectPrinterBtn;
+    this.printOptionsBtn = printOptionsBtn;
 
     this.updatePrinterStatus();
   }
 
+  /**
+   * Set up all event handlers for UI interactions
+   * @returns {void}
+   */
   setupEventHandlers() {
     // Color picker
-    document.getElementById('colorPicker').addEventListener('change', (e) => {
-      this.drawingManager.setColor(e.target.value);
-    });
+    const colorPicker = document.getElementById('colorPicker');
+    if (colorPicker instanceof HTMLInputElement) {
+      colorPicker.addEventListener('change', (e) => {
+        const target = e.target;
+        if (target instanceof HTMLInputElement) {
+          this.drawingManager.setColor(target.value);
+        }
+      });
+    }
 
     // Size buttons
-    document.getElementById('sizeS').addEventListener('click', () => {
-      this.setSize(DRAWING_SIZES.SMALL);
-    });
-    document.getElementById('sizeM').addEventListener('click', () => {
-      this.setSize(DRAWING_SIZES.MEDIUM);
-    });
-    document.getElementById('sizeL').addEventListener('click', () => {
-      this.setSize(DRAWING_SIZES.LARGE);
-    });
+    const sizeS = document.getElementById('sizeS');
+    const sizeM = document.getElementById('sizeM');
+    const sizeL = document.getElementById('sizeL');
+
+    if (sizeS) {
+      sizeS.addEventListener('click', () => {
+        this.setSize(DRAWING_SIZES.SMALL);
+      });
+    }
+    if (sizeM) {
+      sizeM.addEventListener('click', () => {
+        this.setSize(DRAWING_SIZES.MEDIUM);
+      });
+    }
+    if (sizeL) {
+      sizeL.addEventListener('click', () => {
+        this.setSize(DRAWING_SIZES.LARGE);
+      });
+    }
 
     // Printer connection
     this.connectPrinterBtn.addEventListener('click', () => this.connectPrinter());
@@ -57,9 +140,10 @@ class StickerPrinterApp {
     this.printOptionsBtn.addEventListener('click', () => this.showPrintOptions());
 
     // Status modal close
-    document
-      .getElementById('statusCloseBtn')
-      .addEventListener('click', () => this.modalManager.closeStatus());
+    const statusCloseBtn = document.getElementById('statusCloseBtn');
+    if (statusCloseBtn) {
+      statusCloseBtn.addEventListener('click', () => this.modalManager.closeStatus());
+    }
 
     // Setup global functions for onclick handlers in HTML
     window.clearCanvas = () => this.clearCanvas();
@@ -94,48 +178,89 @@ class StickerPrinterApp {
     };
   }
 
+  /**
+   * Set the drawing brush size
+   * @param {number} size - The brush size to set
+   * @returns {void}
+   */
   setSize(size) {
     this.drawingManager.setSize(size);
     document.querySelectorAll('.size-btn').forEach((btn) => {
       btn.classList.remove('active');
     });
 
-    if (size === DRAWING_SIZES.SMALL) {
-      document.getElementById('sizeS').classList.add('active');
-    } else if (size === DRAWING_SIZES.MEDIUM) {
-      document.getElementById('sizeM').classList.add('active');
-    } else if (size === DRAWING_SIZES.LARGE) {
-      document.getElementById('sizeL').classList.add('active');
+    const sizeS = document.getElementById('sizeS');
+    const sizeM = document.getElementById('sizeM');
+    const sizeL = document.getElementById('sizeL');
+
+    if (size === DRAWING_SIZES.SMALL && sizeS) {
+      sizeS.classList.add('active');
+    } else if (size === DRAWING_SIZES.MEDIUM && sizeM) {
+      sizeM.classList.add('active');
+    } else if (size === DRAWING_SIZES.LARGE && sizeL) {
+      sizeL.classList.add('active');
     }
   }
 
+  /**
+   * Clear the drawing canvas
+   * @returns {void}
+   */
   clearCanvas() {
     this.drawingManager.clearCanvas();
   }
 
+  /**
+   * Show the text input modal
+   * @returns {void}
+   */
   showTextTools() {
     this.modalManager.showTextTools();
   }
 
+  /**
+   * Add text to the canvas from input field
+   * @returns {void}
+   */
   addText() {
-    const text = document.getElementById('textInput').value;
+    const textInputEl = document.getElementById('textInput');
+    if (!(textInputEl instanceof HTMLInputElement)) {
+      return;
+    }
+    const text = textInputEl.value;
     if (!text) return;
 
-    const color = document.getElementById('colorPicker').value;
+    const colorPickerEl = document.getElementById('colorPicker');
+    if (!(colorPickerEl instanceof HTMLInputElement)) {
+      return;
+    }
+    const color = colorPickerEl.value;
     const size = this.drawingManager.currentSize;
 
     this.drawingManager.addText(text, color, size);
 
     this.modalManager.closeTextTools();
-    document.getElementById('textInput').value = '';
+    textInputEl.value = '';
   }
 
+  /**
+   * Show the AI image generation modal
+   * @returns {void}
+   */
   showAITools() {
     this.modalManager.showAITools();
   }
 
+  /**
+   * Generate an image using AI from prompt
+   * @returns {Promise<void>}
+   */
   async generateAIImage() {
-    const prompt = document.getElementById('aiPrompt').value.trim();
+    const aiPromptEl = document.getElementById('aiPrompt');
+    if (!(aiPromptEl instanceof HTMLInputElement)) {
+      return;
+    }
+    const prompt = aiPromptEl.value.trim();
     if (!prompt) {
       alert('Please describe what you want to draw!');
       return;
@@ -150,22 +275,36 @@ class StickerPrinterApp {
         'Your AI artwork is ready! You can save or print it.'
       );
     } catch (error) {
-      alert('❌ ' + error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      alert('❌ ' + message);
     }
   }
 
+  /**
+   * Start camera capture
+   * @returns {Promise<void>}
+   */
   async captureCamera() {
     try {
       await this.cameraManager.captureCamera();
     } catch (error) {
-      this.modalManager.showStatusWithClose('❌ Camera Error', error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      this.modalManager.showStatusWithClose('❌ Camera Error', message);
     }
   }
 
+  /**
+   * Trigger image upload dialog
+   * @returns {void}
+   */
   uploadImage() {
     this.imageManager.uploadImage();
   }
 
+  /**
+   * Connect to a Bluetooth printer
+   * @returns {Promise<void>}
+   */
   async connectPrinter() {
     try {
       this.modalManager.showStatus('⏳ Connecting...', 'Looking for printer...');
@@ -180,10 +319,15 @@ class StickerPrinterApp {
       );
     } catch (error) {
       this.updatePrinterStatus();
-      this.modalManager.showStatusWithClose('❌ Connection Failed', error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      this.modalManager.showStatusWithClose('❌ Connection Failed', message);
     }
   }
 
+  /**
+   * Disconnect from the printer
+   * @returns {void}
+   */
   disconnectPrinter() {
     this.printerManager.disconnect();
     this.updatePrinterStatus();
@@ -193,6 +337,10 @@ class StickerPrinterApp {
     );
   }
 
+  /**
+   * Update the printer status UI
+   * @returns {void}
+   */
   updatePrinterStatus() {
     const isConnected = this.printerManager.getConnectionStatus();
 
@@ -212,11 +360,19 @@ class StickerPrinterApp {
     }
   }
 
+  /**
+   * Show the print/save options modal
+   * @returns {void}
+   */
   showPrintOptions() {
     const isConnected = this.printerManager.getConnectionStatus();
     this.modalManager.showPrintOptions(isConnected);
   }
 
+  /**
+   * Save the canvas image without printing
+   * @returns {void}
+   */
   saveImageOnly() {
     this.imageManager.saveCanvasAsImage(this.canvas);
     this.modalManager.closePrintOptions();
@@ -226,6 +382,10 @@ class StickerPrinterApp {
     );
   }
 
+  /**
+   * Print the canvas image without saving
+   * @returns {Promise<void>}
+   */
   async printImageOnly() {
     this.modalManager.closePrintOptions();
     try {
@@ -236,13 +396,18 @@ class StickerPrinterApp {
         'Your image has been printed!'
       );
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       this.modalManager.showStatusWithClose(
         '❌ Error',
-        `Printing failed: ${error.message}`
+        `Printing failed: ${message}`
       );
     }
   }
 
+  /**
+   * Save and print the canvas image
+   * @returns {Promise<void>}
+   */
   async saveAndPrint() {
     this.modalManager.closePrintOptions();
     this.imageManager.saveCanvasAsImage(this.canvas);
@@ -255,9 +420,10 @@ class StickerPrinterApp {
         'Your image has been saved and printed!'
       );
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       this.modalManager.showStatusWithClose(
         '❌ Error',
-        `Printing failed: ${error.message}`
+        `Printing failed: ${message}`
       );
     }
   }

@@ -10,16 +10,25 @@
     "test": "vitest",
     "test:unit": "vitest run --config vitest.config.js",
     "test:browser": "vitest run --config vitest.browser.config.js",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "typecheck": "tsc --noEmit",
+    "typecheck:watch": "tsc --noEmit --watch"
   },
-  "keywords": ["drawing", "printer", "bluetooth", "kids"],
+  "keywords": [
+    "drawing",
+    "printer",
+    "bluetooth",
+    "kids"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/web-bluetooth": "^0.0.21",
     "@vitest/browser": "^4.0.8",
     "@vitest/ui": "^4.0.8",
     "jsdom": "^27.1.0",
     "playwright": "^1.56.1",
+    "typescript": "^5.9.3",
     "vite": "^7.2.2",
     "vitest": "^4.0.8"
   }

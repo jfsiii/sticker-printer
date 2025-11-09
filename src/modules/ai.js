@@ -1,10 +1,30 @@
+import { ModalManager } from './modals.js';
+
+/**
+ * Manages AI image generation using external API
+ */
 export class AIManager {
+  /** @type {ModalManager} */
+  modalManager;
+
+  /**
+   * @param {ModalManager} modalManager - The modal manager instance
+   */
   constructor(modalManager) {
     this.modalManager = modalManager;
   }
 
+  /**
+   * Generate an image from a text prompt using AI
+   * @param {string} prompt - The text description of what to generate
+   * @returns {Promise<HTMLImageElement>} The generated image element
+   * @throws {Error} If AI status element not found or image generation fails
+   */
   async generateImage(prompt) {
     const aiStatus = document.getElementById('aiStatus');
+    if (!aiStatus) {
+      throw new Error('AI status element not found');
+    }
     aiStatus.style.display = 'block';
 
     return new Promise((resolve, reject) => {

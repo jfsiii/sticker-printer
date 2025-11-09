@@ -1,12 +1,29 @@
 import { PRINTER_CONFIG, COMMANDS } from './constants.js';
 
+/**
+ * Manages Bluetooth printer connections and printing operations
+ */
 export class PrinterManager {
+  /** @type {BluetoothDevice | null} */
+  device;
+
+  /** @type {BluetoothRemoteGATTCharacteristic | null} */
+  writeCharacteristic;
+
+  /** @type {boolean} */
+  isConnected;
+
   constructor() {
     this.device = null;
     this.writeCharacteristic = null;
     this.isConnected = false;
   }
 
+  /**
+   * Connect to a Bluetooth printer device
+   * @returns {Promise<string>} The name of the connected device
+   * @throws {Error} If connection fails, device/service not found, or GATT server unavailable
+   */
   async connect() {
     try {
       console.log('Requesting Bluetooth device...');
@@ -16,6 +33,9 @@ export class PrinterManager {
       });
 
       console.log('Device selected:', this.device.name);
+      if (!this.device.gatt) {
+        throw new Error('GATT server not available');
+      }
       const server = await this.device.gatt.connect();
       console.log('Connected to GATT server');
       const services = await server.getPrimaryServices();
@@ -64,8 +84,12 @@ export class PrinterManager {
     }
   }
 
+  /**
+   * Disconnect from the printer
+   * @returns {void}
+   */
   disconnect() {
-    if (this.device?.gatt.connected) {
+    if (this.device?.gatt?.connected) {
       this.device.gatt.disconnect();
     }
     this.isConnected = false;
@@ -73,6 +97,12 @@ export class PrinterManager {
     this.writeCharacteristic = null;
   }
 
+  /**
+   * Send raw data to the printer in chunks
+   * @param {number[]} data - Array of bytes to send
+   * @returns {Promise<void>}
+   * @throws {Error} If printer is not connected or any chunk write fails
+   */
   async sendData(data) {
     if (!this.writeCharacteristic) {
       throw new Error('Printer not connected');
@@ -89,7 +119,8 @@ export class PrinterManager {
         // Small delay between writes to ensure printer processes each chunk
         await new Promise((resolve) => setTimeout(resolve, 5));
       } catch (error) {
-        console.error(`Chunk write failed at offset ${i}:`, error.message);
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Chunk write failed at offset ${i}:`, message);
         throw error;
       }
     }
@@ -97,8 +128,17 @@ export class PrinterManager {
     console.log('All data sent');
   }
 
+  /**
+   * Convert a canvas to a bitmap array for printing
+   * @param {HTMLCanvasElement} canvas - The canvas to convert
+   * @returns {number[][]} 2D array of bytes representing the bitmap
+   * @throws {Error} If 2D context cannot be obtained from canvas
+   */
   canvasToBitmap(canvas) {
     const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Could not get 2D context from canvas');
+    }
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
@@ -134,6 +174,11 @@ export class PrinterManager {
     return bitmap;
   }
 
+  /**
+   * Print a bitmap to the connected printer
+   * @param {number[][]} bitmap - 2D array of bytes representing the image
+   * @returns {Promise<void>}
+   */
   async printBitmap(bitmap) {
     const { ESC, GS } = COMMANDS;
 
@@ -189,15 +234,28 @@ export class PrinterManager {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
+  /**
+   * Print the contents of a canvas
+   * @param {HTMLCanvasElement} canvas - The canvas to print
+   * @returns {Promise<void>}
+   */
   async print(canvas) {
     const bitmap = this.canvasToBitmap(canvas);
     await this.printBitmap(bitmap);
   }
 
+  /**
+   * Get the name of the connected device
+   * @returns {string} The device name or 'Unknown' if not connected
+   */
   getDeviceName() {
     return this.device?.name || 'Unknown';
   }
 
+  /**
+   * Check if printer is currently connected
+   * @returns {boolean} True if connected, false otherwise
+   */
   getConnectionStatus() {
     return this.isConnected;
   }

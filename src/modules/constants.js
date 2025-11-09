@@ -1,4 +1,4 @@
-export const PRINTER_CONFIG = {
+export const PRINTER_CONFIG = /** @type {const} */ ({
   WRITE_CHAR_UUID: '0000ff02-0000-1000-8000-00805f9b34fb',
   NOTIFY_CHAR_UUID: '0000ff03-0000-1000-8000-00805f9b34fb',
   SERVICE_UUID: '0000ff00-0000-1000-8000-00805f9b34fb',
@@ -6,20 +6,20 @@ export const PRINTER_CONFIG = {
   BYTES_PER_LINE: 48,
   MTU_SIZE: 150,
   LINES_PER_CHUNK: 8,
-};
+});
 
-export const COMMANDS = {
+export const COMMANDS = /** @type {const} */ ({
   ESC: 0x1b,
   GS: 0x1d,
-};
+});
 
-export const CANVAS_CONFIG = {
+export const CANVAS_CONFIG = /** @type {const} */ ({
   WIDTH: 384,
   HEIGHT: 500,
-};
+});
 
-export const DRAWING_SIZES = {
+export const DRAWING_SIZES = /** @type {const} */ ({
   SMALL: 2,
   MEDIUM: 5,
   LARGE: 10,
-};
+});
