@@ -5,6 +5,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup.js'],
+    // Increase forks pool timeout to avoid startup issues
+    poolOptions: {
+      forks: {
+        execArgv: [],
+      },
+    },
+    hookTimeout: 30000, // 30 seconds for pool startup
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
