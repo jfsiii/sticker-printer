@@ -36,13 +36,13 @@
         <div class="size-btn" id="sizeL">L</div>
       </div>
 
-      <button class="tool-btn danger" onclick="clearCanvas()">
+      <button class="tool-btn danger" onclick="drawingManager.clearCanvas()">
         🗑️ Clear
       </button>
-      <button class="tool-btn primary" onclick="modalManager.showTextTools()">
+      <button class="tool-btn primary" onclick="drawingManager.showTextInputModal()">
         📝 Add Text
       </button>
-      <button class="tool-btn primary" onclick="modalManager.showAITools()">
+      <button class="tool-btn primary" onclick="aiManager.showPromptModal()">
         ✨ AI Draw
       </button>
       <button class="tool-btn primary" id="connectPrinterBtn">
@@ -58,10 +58,10 @@
       <button class="tool-btn success" id="printOptionsBtn">
         🖨️ Save/Print
       </button>
-      <button class="tool-btn primary" onclick="captureCamera()">
+      <button class="tool-btn primary" onclick="cameraManager.captureCamera()">
         📷 Take Photo
       </button>
-      <button class="tool-btn primary" onclick="uploadImage()">
+      <button class="tool-btn primary" onclick="imageManager.uploadImage()">
         🖼️ Upload Image
       </button>
     </div>

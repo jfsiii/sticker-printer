@@ -56,15 +56,8 @@ class StickerPrinterApp {
 
     this.drawingManager = new DrawingManager(this.canvas);
     this.printerManager = new PrinterManager();
-
-    // Create modal manager first, then configure it with dependencies
     this.modalManager = new ModalManager();
     this.aiManager = new AIManager(this.modalManager);
-
-    // Configure modal manager with AI capabilities
-    this.modalManager.aiManager = this.aiManager;
-    this.modalManager.onImageReady = (img) => this.drawingManager.drawImage(img);
-
     this.cameraManager = new CameraManager(this.modalManager);
     this.imageManager = new ImageManager();
 
@@ -154,15 +147,10 @@ class StickerPrinterApp {
 
     // Expose managers globally for HTML onclick handlers
     window.modalManager = this.modalManager;
-
-    // Setup global functions for onclick handlers in HTML
-    window.clearCanvas = () => this.clearCanvas();
-    window.addText = () => this.addText();
-    window.captureCamera = () => this.captureCamera();
-    window.uploadImage = () => this.uploadImage();
-    window.saveImageOnly = () => this.saveImageOnly();
-    window.printImageOnly = () => this.printImageOnly();
-    window.saveAndPrint = () => this.saveAndPrint();
+    window.drawingManager = this.drawingManager;
+    window.cameraManager = this.cameraManager;
+    window.imageManager = this.imageManager;
+    window.aiManager = this.aiManager;
 
     // Image upload handler
     this.imageManager.onImageLoaded = (img) => {
@@ -179,6 +167,21 @@ class StickerPrinterApp {
         this.drawingManager.drawImage(img);
       };
     };
+
+    // AI image generated handler
+    this.aiManager.onImageGenerated = (img) => this.handleAIImageGenerated(img);
+
+    // Text entered handler
+    this.drawingManager.onTextEntered = (text) => {
+      const colorPickerEl = document.getElementById('colorPicker');
+      if (colorPickerEl instanceof HTMLInputElement) {
+        const color = colorPickerEl.value;
+        this.drawingManager.addText(text, color, this.drawingManager.currentSize);
+      }
+    };
+
+    // Print action handler
+    this.modalManager.onPrintAction = (action) => this.handlePrintAction(action);
   }
 
   /**
@@ -205,60 +208,16 @@ class StickerPrinterApp {
     }
   }
 
+
   /**
-   * Clear the drawing canvas
+   * Handle AI image generation - orchestrates drawing the generated image
+   * @param {HTMLImageElement} img - The generated image from AI
    * @returns {void}
    */
-  clearCanvas() {
-    this.drawingManager.clearCanvas();
+  handleAIImageGenerated(img) {
+    this.drawingManager.drawImage(img);
   }
 
-  /**
-   * Add text to the canvas from input field
-   * @returns {void}
-   */
-  addText() {
-    const textInputEl = document.getElementById('textInput');
-    if (!(textInputEl instanceof HTMLInputElement)) {
-      return;
-    }
-    const text = textInputEl.value;
-    if (!text) return;
-
-    const colorPickerEl = document.getElementById('colorPicker');
-    if (!(colorPickerEl instanceof HTMLInputElement)) {
-      return;
-    }
-    const color = colorPickerEl.value;
-    const size = this.drawingManager.currentSize;
-
-    this.drawingManager.addText(text, color, size);
-
-    this.modalManager.closeTextTools();
-    textInputEl.value = '';
-  }
-
-
-  /**
-   * Start camera capture
-   * @returns {Promise<void>}
-   */
-  async captureCamera() {
-    try {
-      await this.cameraManager.captureCamera();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.modalManager.showStatusWithClose('❌ Camera Error', message);
-    }
-  }
-
-  /**
-   * Trigger image upload dialog
-   * @returns {void}
-   */
-  uploadImage() {
-    this.imageManager.uploadImage();
-  }
 
   /**
    * Connect to a Bluetooth printer
@@ -329,8 +288,25 @@ class StickerPrinterApp {
   }
 
   /**
+   * Handle print action - orchestrates the selected action
+   * @param {'save' | 'print' | 'saveAndPrint'} action - The action to perform
+   * @returns {void | Promise<void>}
+   */
+  handlePrintAction(action) {
+    switch (action) {
+      case 'save':
+        return this.saveImageOnly();
+      case 'print':
+        return this.printImageOnly();
+      case 'saveAndPrint':
+        return this.saveAndPrint();
+    }
+  }
+
+  /**
    * Save the canvas image without printing
    * @returns {void}
+   * @private
    */
   saveImageOnly() {
     this.imageManager.saveCanvasAsImage(this.canvas);
@@ -344,6 +320,7 @@ class StickerPrinterApp {
   /**
    * Print the canvas image without saving
    * @returns {Promise<void>}
+   * @private
    */
   async printImageOnly() {
     this.modalManager.closePrintOptions();
@@ -366,6 +343,7 @@ class StickerPrinterApp {
   /**
    * Save and print the canvas image
    * @returns {Promise<void>}
+   * @private
    */
   async saveAndPrint() {
     this.modalManager.closePrintOptions();

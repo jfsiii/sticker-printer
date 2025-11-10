@@ -1,3 +1,5 @@
+import { html, render } from 'lit';
+import { AppModal } from '../components/app-modal.js';
 import { CANVAS_CONFIG, DRAWING_SIZES } from './constants.js';
 
 /**
@@ -27,6 +29,9 @@ export class DrawingManager {
 
   /** @type {number} */
   textCount;
+
+  /** @type {((text: string) => void) | undefined} */
+  onTextEntered;
 
   /**
    * @param {HTMLCanvasElement} canvas - The canvas element to draw on
@@ -225,5 +230,88 @@ export class DrawingManager {
    */
   getContext() {
     return this.ctx;
+  }
+
+  /**
+   * Show the text input modal
+   * @returns {void}
+   */
+  showTextInputModal() {
+    let modal = /** @type {AppModal | null} */ (document.getElementById('textInputModal'));
+    if (!modal) {
+      modal = /** @type {AppModal} */ (document.createElement('app-modal'));
+      modal.id = 'textInputModal';
+      modal.title = '📝 Add Text';
+      document.body.appendChild(modal);
+    }
+
+    // Render content using Lit template
+    render(
+      html`
+        <input
+          type="text"
+          id="textInput"
+          placeholder="Type your message..."
+        />
+        <button
+          class="primary"
+          slot="actions"
+          @click=${() => this._handleTextSubmit()}
+        >
+          Add Text
+        </button>
+        <button
+          class="danger"
+          slot="actions"
+          @click=${() => this.closeTextInputModal()}
+        >
+          Cancel
+        </button>
+      `,
+      modal
+    );
+
+    modal.open = true;
+    // Focus input after modal opens
+    setTimeout(() => {
+      const input = document.getElementById('textInput');
+      if (input) input.focus();
+    }, 100);
+  }
+
+  /**
+   * Close the text input modal
+   * @returns {void}
+   */
+  closeTextInputModal() {
+    const modal = /** @type {AppModal | null} */ (document.getElementById('textInputModal'));
+    if (modal) {
+      modal.open = false;
+    }
+  }
+
+  /**
+   * Handle text input submission
+   * @returns {void}
+   * @private
+   */
+  _handleTextSubmit() {
+    const textInputEl = document.getElementById('textInput');
+    if (!(textInputEl instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const text = textInputEl.value.trim();
+    if (!text) {
+      alert('Please enter some text!');
+      return;
+    }
+
+    // Call the callback with the text - orchestration happens elsewhere
+    if (this.onTextEntered) {
+      this.onTextEntered(text);
+    }
+
+    this.closeTextInputModal();
   }
 }

@@ -9,13 +9,10 @@
 declare global {
   interface Window {
     modalManager: import('./src/modules/modals.js').ModalManager;
-    clearCanvas: () => void;
-    addText: () => void;
-    captureCamera: () => Promise<void>;
-    uploadImage: () => void;
-    saveImageOnly: () => void;
-    printImageOnly: () => Promise<void>;
-    saveAndPrint: () => Promise<void>;
+    drawingManager: import('./src/modules/drawing.js').DrawingManager;
+    cameraManager: import('./src/modules/camera.js').CameraManager;
+    imageManager: import('./src/modules/image.js').ImageManager;
+    aiManager: import('./src/modules/ai.js').AIManager;
   }
 }
 

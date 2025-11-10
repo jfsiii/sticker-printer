@@ -3,26 +3,21 @@ import { AppModal } from '../components/app-modal.js';
 
 /**
  * @typedef {Object} ModalManagerOptions
- * @property {import('./ai.js').AIManager} [aiManager] - AI manager instance for image generation
- * @property {(img: HTMLImageElement) => void} [onImageReady] - Callback when image is ready to be added to canvas
+ * @property {(action: 'save' | 'print' | 'saveAndPrint') => void | Promise<void>} [onPrintAction] - Callback when print action is selected
  */
 
 /**
  * Manages modal dialogs and overlays
  */
 export class ModalManager {
-  /** @type {import('./ai.js').AIManager | undefined} */
-  aiManager;
-
-  /** @type {((img: HTMLImageElement) => void) | undefined} */
-  onImageReady;
+  /** @type {((action: 'save' | 'print' | 'saveAndPrint') => void | Promise<void>) | undefined} */
+  onPrintAction;
 
   /**
    * @param {ModalManagerOptions} [options] - Configuration options
    */
   constructor(options = {}) {
-    this.aiManager = options.aiManager;
-    this.onImageReady = options.onImageReady;
+    this.onPrintAction = options.onPrintAction;
   }
 
   /**
@@ -95,161 +90,7 @@ export class ModalManager {
     return modal;
   }
 
-  /**
-   * Show the text input modal
-   * @returns {void}
-   */
-  showTextTools() {
-    let modal = /** @type {AppModal | null} */ (document.getElementById('textToolsModal'));
-    if (!modal) {
-      modal = /** @type {AppModal} */ (document.createElement('app-modal'));
-      modal.id = 'textToolsModal';
-      document.body.appendChild(modal);
-    }
 
-    // Render content using Lit template
-    render(
-      html`
-        <input
-          type="text"
-          id="textInput"
-          placeholder="Type your message..."
-        />
-        <button
-          class="primary"
-          slot="actions"
-          @click=${() => window.addText()}
-        >
-          Add Text
-        </button>
-        <button
-          class="danger"
-          slot="actions"
-          @click=${() => this.closeTextTools()}
-        >
-          Cancel
-        </button>
-      `,
-      modal
-    );
-
-    modal.open = true;
-    // Focus input after modal opens
-    setTimeout(() => {
-      const input = document.getElementById('textInput');
-      if (input) input.focus();
-    }, 100);
-  }
-
-  /**
-   * Close the text input modal
-   * @returns {void}
-   */
-  closeTextTools() {
-    const modal = /** @type {AppModal | null} */ (document.getElementById('textToolsModal'));
-    if (modal) {
-      modal.open = false;
-    }
-  }
-
-  /**
-   * Show the AI generation modal
-   * @returns {void}
-   */
-  showAITools() {
-    let modal = /** @type {AppModal | null} */ (document.getElementById('aiToolsModal'));
-    if (!modal) {
-      modal = /** @type {AppModal} */ (document.createElement('app-modal'));
-      modal.id = 'aiToolsModal';
-      modal.title = '✨ AI Magic Draw';
-      document.body.appendChild(modal);
-    }
-
-    // Render content using Lit template
-    render(
-      html`
-        <input
-          type="text"
-          id="aiPrompt"
-          placeholder="Describe what to draw... (e.g., 'a cute dinosaur')"
-        />
-        <button
-          class="success"
-          slot="actions"
-          @click=${() => this._handleGenerateAI()}
-        >
-          🎨 Generate!
-        </button>
-        <button
-          class="danger"
-          slot="actions"
-          @click=${() => this.closeAITools()}
-        >
-          Cancel
-        </button>
-      `,
-      modal
-    );
-
-    modal.open = true;
-    // Focus input after modal opens
-    setTimeout(() => {
-      const input = document.getElementById('aiPrompt');
-      if (input) input.focus();
-    }, 100);
-  }
-
-  /**
-   * Handle AI image generation
-   * @returns {Promise<void>}
-   * @private
-   */
-  async _handleGenerateAI() {
-    if (!this.aiManager) {
-      alert('AI Manager not configured');
-      return;
-    }
-
-    const aiPromptEl = document.getElementById('aiPrompt');
-    if (!(aiPromptEl instanceof HTMLInputElement)) {
-      return;
-    }
-
-    const prompt = aiPromptEl.value.trim();
-    if (!prompt) {
-      alert('Please describe what you want to draw!');
-      return;
-    }
-
-    try {
-      const img = await this.aiManager.generateImage(prompt);
-
-      // Call the callback to add image to canvas
-      if (this.onImageReady) {
-        this.onImageReady(img);
-      }
-
-      this.closeAITools();
-      this.showStatusWithClose(
-        '✨ Perfect!',
-        'Your AI artwork is ready! You can save or print it.'
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      alert('❌ ' + message);
-    }
-  }
-
-  /**
-   * Close the AI generation modal
-   * @returns {void}
-   */
-  closeAITools() {
-    const modal = /** @type {AppModal | null} */ (document.getElementById('aiToolsModal'));
-    if (modal) {
-      modal.open = false;
-    }
-  }
 
   /**
    * Show print options modal
@@ -273,7 +114,7 @@ export class ModalManager {
         <button
           class="primary"
           slot="actions"
-          @click=${() => window.saveImageOnly()}
+          @click=${() => this._handlePrintAction('save')}
         >
           💾 Save Image
         </button>
@@ -282,14 +123,14 @@ export class ModalManager {
               <button
                 class="success"
                 slot="actions"
-                @click=${() => window.printImageOnly()}
+                @click=${() => this._handlePrintAction('print')}
               >
                 🖨️ Print to Printer
               </button>
               <button
                 class="success"
                 slot="actions"
-                @click=${() => window.saveAndPrint()}
+                @click=${() => this._handlePrintAction('saveAndPrint')}
               >
                 💾🖨️ Save & Print
               </button>
@@ -310,6 +151,19 @@ export class ModalManager {
   }
 
   /**
+   * Handle print action selection
+   * @param {'save' | 'print' | 'saveAndPrint'} action - The action to perform
+   * @returns {void}
+   * @private
+   */
+  _handlePrintAction(action) {
+    // Call the callback with the action - orchestration happens elsewhere
+    if (this.onPrintAction) {
+      this.onPrintAction(action);
+    }
+  }
+
+  /**
    * Close the print options modal
    * @returns {void}
    */
@@ -326,8 +180,6 @@ export class ModalManager {
    */
   closeAll() {
     this.closeStatus();
-    this.closeTextTools();
-    this.closeAITools();
     this.closePrintOptions();
   }
 }
