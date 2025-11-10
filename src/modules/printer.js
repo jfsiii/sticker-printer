@@ -184,17 +184,31 @@ export class PrinterManager {
 
   /**
    * Print a bitmap to the connected printer
+   *
+   * Protocol follows Phomemo M02 specification:
+   * https://github.com/vivier/phomemo-tools?tab=readme-ov-file#3-protocol-for-m02
+   *
+   * Sequence:
+   * 1. Header - Initialize printer and set parameters
+   * 2. Block Marker + Image Data - Send bitmap in chunks
+   * 3. Footer - Feed paper and finalize
+   *
    * @param {number[][]} bitmap - 2D array of bytes representing the image
    * @returns {Promise<void>}
    */
   async printBitmap(bitmap) {
     const { ESC, GS } = COMMANDS;
 
-    // ESC @ - Initialize printer (reset to default state)
+    // === HEADER: Initialize Printer ===
+    // https://github.com/vivier/phomemo-tools?tab=readme-ov-file#31-header
+
+    // ESC @ - Initialize/reset printer to default state
+    // https://download4.epson.biz/sec_pubs/pos/reference_en/escpos/esc_atsign.html
     await this.sendData([ESC, 0x40]);
     await sleep(200);
 
     // Phomemo-specific initialization sequence
+    // Commands reverse-engineered from Android app
     await this.sendData(PHOMEMO_COMMANDS.WAKE_PRINTER);
     await sleep(100);
     await this.sendData(PHOMEMO_COMMANDS.SET_DENSITY);
@@ -202,13 +216,27 @@ export class PrinterManager {
     await this.sendData(PHOMEMO_COMMANDS.SET_LABEL_GAP);
     await sleep(100);
 
-    // ESC a - Set justification (0x01 = center)
+    // ESC a n - Set justification
+    // n = 0 (left), 1 (center), 2 (right)
+    // https://download4.epson.biz/sec_pubs/pos/reference_en/escpos/esc_la.html
     await this.sendData([ESC, 0x61, 0x01]);
     await sleep(100);
     await this.sendData(PHOMEMO_COMMANDS.SET_PRINT_SPEED);
     await sleep(100);
 
     const height = bitmap.length;
+
+    // === BLOCK MARKER + IMAGE DATA ===
+    // https://github.com/vivier/phomemo-tools?tab=readme-ov-file#32-block-marker
+    //
+    // GS v 0 m xL xH yL yH [data]
+    // - GS v 0: Raster image print command
+    // - m: Mode (0x00 = normal)
+    // - xL xH: Width in bytes (48 for M02 = 384 pixels ÷ 8)
+    // - yL yH: Height in dots (little-endian 16-bit)
+    // - [data]: Bitmap data (1 bit per pixel, MSB first)
+    //
+    // https://download4.epson.biz/sec_pubs/pos/reference_en/escpos/gs_lv_0.html
 
     for (
       let startLine = 0;
@@ -221,17 +249,19 @@ export class PrinterManager {
       );
       const chunkHeight = endLine - startLine;
 
+      // Build block marker header
       const header = [
-        GS,
-        0x76,
-        0x30,
-        0x00,
-        PRINTER_CONFIG.BYTES_PER_LINE,
-        0x00,
-        chunkHeight & 0xff,
-        (chunkHeight >> 8) & 0xff,
+        GS,                              // 0x1d - GS prefix
+        0x76,                            // v - Raster image command
+        0x30,                            // 0 - Normal mode
+        0x00,                            // m - Mode byte
+        PRINTER_CONFIG.BYTES_PER_LINE,   // xL - Width low byte (48)
+        0x00,                            // xH - Width high byte
+        chunkHeight & 0xff,              // yL - Height low byte
+        (chunkHeight >> 8) & 0xff,       // yH - Height high byte
       ];
 
+      // Collect bitmap rows for this chunk
       const chunkData = [];
       for (let i = startLine; i < endLine; i++) {
         chunkData.push(...bitmap[i]);
@@ -241,7 +271,11 @@ export class PrinterManager {
       await sleep(150);
     }
 
-    // ESC d - Print and feed paper (0x03 = 3 lines)
+    // === FOOTER: Feed Paper ===
+    // https://github.com/vivier/phomemo-tools?tab=readme-ov-file#33-footer
+    //
+    // ESC d n - Print and feed n lines
+    // https://download4.epson.biz/sec_pubs/pos/reference_en/escpos/esc_ld.html
     await this.sendData([ESC, 0x64, 0x03]);
     await sleep(100);
   }
