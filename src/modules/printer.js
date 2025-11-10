@@ -1,4 +1,13 @@
-import { PRINTER_CONFIG, COMMANDS } from './constants.js';
+import { PRINTER_CONFIG, COMMANDS, PHOMEMO_COMMANDS } from './constants.js';
+
+/**
+ * Sleep/wait for the specified number of milliseconds
+ * @param {number} ms - Milliseconds to wait
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * Manages Bluetooth printer connections and printing operations
@@ -90,7 +99,7 @@ export class PrinterManager {
 
   /**
    * Send raw data to the printer in chunks
-   * @param {number[]} data - Array of bytes to send
+   * @param {number[] | readonly number[]} data - Array of bytes to send
    * @returns {Promise<void>}
    * @throws {Error} If printer is not connected or any chunk write fails
    */
@@ -103,14 +112,21 @@ export class PrinterManager {
       const chunk = data.slice(i, i + PRINTER_CONFIG.MTU_SIZE);
       await this.writeCharacteristic.writeValue(new Uint8Array(chunk));
       // Small delay between writes to ensure printer processes each chunk
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      await sleep(5);
     }
   }
 
   /**
-   * Convert a canvas to a bitmap array for printing
+   * Convert a canvas to a 1-bit bitmap array for thermal printing
+   *
+   * Thermal printers need images in a specific format:
+   * - 1 bit per pixel (black or white only, no grayscale)
+   * - Pixels packed into bytes (8 pixels = 1 byte)
+   * - MSB (Most Significant Bit) first: leftmost pixel = bit 7, rightmost = bit 0
+   * - Organized as rows of bytes
+   *
    * @param {HTMLCanvasElement} canvas - The canvas to convert
-   * @returns {number[][]} 2D array of bytes representing the bitmap
+   * @returns {number[][]} 2D array where each inner array is a row of bytes
    * @throws {Error} If 2D context cannot be obtained from canvas
    */
   canvasToBitmap(canvas) {
@@ -118,18 +134,28 @@ export class PrinterManager {
     if (!ctx) {
       throw new Error('Could not get 2D context from canvas');
     }
+    // Get raw RGBA pixel data from canvas
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
+    const data = imageData.data; // [r, g, b, a, r, g, b, a, ...]
 
     const bitmap = [];
 
+    // Loop 1: Process each horizontal line of pixels (y-axis)
     for (let y = 0; y < canvas.height; y++) {
       const row = [];
+
+      // Loop 2: Process each byte in this row
+      // 384 pixels wide ÷ 8 pixels per byte = 48 bytes per row
       for (let x = 0; x < PRINTER_CONFIG.BYTES_PER_LINE; x++) {
         let byte = 0;
+
+        // Loop 3: Pack 8 pixels into 1 byte
+        // Each bit represents one pixel: 1 = black, 0 = white
         for (let bit = 0; bit < 8; bit++) {
-          const px = x * 8 + bit;
+          const px = x * 8 + bit; // Calculate actual pixel x-coordinate
+
           if (px < canvas.width) {
+            // Calculate index into RGBA array: (row * width + column) * 4 channels
             const idx = (y * canvas.width + px) * 4;
 
             if (idx + 3 < data.length) {
@@ -137,10 +163,13 @@ export class PrinterManager {
               const g = data[idx + 1];
               const b = data[idx + 2];
 
+              // Convert RGB to perceived brightness using standard luminance formula
+              // Human eyes are more sensitive to green, less to blue
               const brightness = r * 0.299 + g * 0.587 + b * 0.114;
 
+              // If pixel is dark (< 128 on 0-255 scale), set bit to 1 (print black)
               if (brightness < 128) {
-                byte |= 1 << (7 - bit);
+                byte |= 1 << (7 - bit); // Set bit from left to right (MSB first)
               }
             }
           }
@@ -161,20 +190,23 @@ export class PrinterManager {
   async printBitmap(bitmap) {
     const { ESC, GS } = COMMANDS;
 
+    // ESC @ - Initialize printer (reset to default state)
     await this.sendData([ESC, 0x40]);
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await sleep(200);
 
-    await this.sendData([0x1a, 0x04, 0x5a]);
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    await this.sendData([0x1a, 0x09, 0x0c]);
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    await this.sendData([0x1a, 0x07, 0x01, 0x00, 0x00]);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Phomemo-specific initialization sequence
+    await this.sendData(PHOMEMO_COMMANDS.WAKE_PRINTER);
+    await sleep(100);
+    await this.sendData(PHOMEMO_COMMANDS.SET_DENSITY);
+    await sleep(100);
+    await this.sendData(PHOMEMO_COMMANDS.SET_LABEL_GAP);
+    await sleep(100);
 
+    // ESC a - Set justification (0x01 = center)
     await this.sendData([ESC, 0x61, 0x01]);
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    await this.sendData([0x1f, 0x11, 0x02, 0x04]);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await sleep(100);
+    await this.sendData(PHOMEMO_COMMANDS.SET_PRINT_SPEED);
+    await sleep(100);
 
     const height = bitmap.length;
 
@@ -206,11 +238,12 @@ export class PrinterManager {
       }
 
       await this.sendData([...header, ...chunkData]);
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await sleep(150);
     }
 
+    // ESC d - Print and feed paper (0x03 = 3 lines)
     await this.sendData([ESC, 0x64, 0x03]);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await sleep(100);
   }
 
   /**
