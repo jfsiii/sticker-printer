@@ -2,15 +2,27 @@ import { html, render } from 'lit';
 import { AppModal } from '../components/app-modal.js';
 
 /**
+ * @typedef {Object} ModalManagerOptions
+ * @property {import('./ai.js').AIManager} [aiManager] - AI manager instance for image generation
+ * @property {(img: HTMLImageElement) => void} [onImageReady] - Callback when image is ready to be added to canvas
+ */
+
+/**
  * Manages modal dialogs and overlays
  */
 export class ModalManager {
+  /** @type {import('./ai.js').AIManager | undefined} */
+  aiManager;
+
+  /** @type {((img: HTMLImageElement) => void) | undefined} */
+  onImageReady;
+
   /**
-   * @throws {Error} If required modal elements are not found in DOM
+   * @param {ModalManagerOptions} [options] - Configuration options
    */
-  constructor() {
-    // No longer need modalOverlay or statusModal references
-    // Modals are self-contained now
+  constructor(options = {}) {
+    this.aiManager = options.aiManager;
+    this.onImageReady = options.onImageReady;
   }
 
   /**
@@ -164,7 +176,7 @@ export class ModalManager {
         <button
           class="success"
           slot="actions"
-          @click=${() => window.generateAIImage()}
+          @click=${() => this._handleGenerateAI()}
         >
           🎨 Generate!
         </button>
@@ -185,6 +197,47 @@ export class ModalManager {
       const input = document.getElementById('aiPrompt');
       if (input) input.focus();
     }, 100);
+  }
+
+  /**
+   * Handle AI image generation
+   * @returns {Promise<void>}
+   * @private
+   */
+  async _handleGenerateAI() {
+    if (!this.aiManager) {
+      alert('AI Manager not configured');
+      return;
+    }
+
+    const aiPromptEl = document.getElementById('aiPrompt');
+    if (!(aiPromptEl instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const prompt = aiPromptEl.value.trim();
+    if (!prompt) {
+      alert('Please describe what you want to draw!');
+      return;
+    }
+
+    try {
+      const img = await this.aiManager.generateImage(prompt);
+
+      // Call the callback to add image to canvas
+      if (this.onImageReady) {
+        this.onImageReady(img);
+      }
+
+      this.closeAITools();
+      this.showStatusWithClose(
+        '✨ Perfect!',
+        'Your AI artwork is ready! You can save or print it.'
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      alert('❌ ' + message);
+    }
   }
 
   /**

@@ -8,20 +8,14 @@
  */
 declare global {
   interface Window {
+    modalManager: import('./src/modules/modals.js').ModalManager;
     clearCanvas: () => void;
-    showTextTools: () => void;
-    closeTextTools: () => void;
     addText: () => void;
-    showAITools: () => void;
-    closeAITools: () => void;
-    generateAIImage: () => Promise<void>;
     captureCamera: () => Promise<void>;
     uploadImage: () => void;
     saveImageOnly: () => void;
     printImageOnly: () => Promise<void>;
     saveAndPrint: () => Promise<void>;
-    closePrintOptionsModal: () => void;
-    closeStatusModal: () => void;
   }
 }
 

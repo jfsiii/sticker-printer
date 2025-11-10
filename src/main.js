@@ -56,8 +56,15 @@ class StickerPrinterApp {
 
     this.drawingManager = new DrawingManager(this.canvas);
     this.printerManager = new PrinterManager();
+
+    // Create modal manager first, then configure it with dependencies
     this.modalManager = new ModalManager();
     this.aiManager = new AIManager(this.modalManager);
+
+    // Configure modal manager with AI capabilities
+    this.modalManager.aiManager = this.aiManager;
+    this.modalManager.onImageReady = (img) => this.drawingManager.drawImage(img);
+
     this.cameraManager = new CameraManager(this.modalManager);
     this.imageManager = new ImageManager();
 
@@ -145,21 +152,17 @@ class StickerPrinterApp {
       statusCloseBtn.addEventListener('click', () => this.modalManager.closeStatus());
     }
 
+    // Expose managers globally for HTML onclick handlers
+    window.modalManager = this.modalManager;
+
     // Setup global functions for onclick handlers in HTML
     window.clearCanvas = () => this.clearCanvas();
-    window.showTextTools = () => this.showTextTools();
-    window.closeTextTools = () => this.modalManager.closeTextTools();
     window.addText = () => this.addText();
-    window.showAITools = () => this.showAITools();
-    window.closeAITools = () => this.modalManager.closeAITools();
-    window.generateAIImage = () => this.generateAIImage();
     window.captureCamera = () => this.captureCamera();
     window.uploadImage = () => this.uploadImage();
     window.saveImageOnly = () => this.saveImageOnly();
     window.printImageOnly = () => this.printImageOnly();
     window.saveAndPrint = () => this.saveAndPrint();
-    window.closePrintOptionsModal = () => this.modalManager.closePrintOptions();
-    window.closeStatusModal = () => this.modalManager.closeStatus();
 
     // Image upload handler
     this.imageManager.onImageLoaded = (img) => {
@@ -211,14 +214,6 @@ class StickerPrinterApp {
   }
 
   /**
-   * Show the text input modal
-   * @returns {void}
-   */
-  showTextTools() {
-    this.modalManager.showTextTools();
-  }
-
-  /**
    * Add text to the canvas from input field
    * @returns {void}
    */
@@ -243,42 +238,6 @@ class StickerPrinterApp {
     textInputEl.value = '';
   }
 
-  /**
-   * Show the AI image generation modal
-   * @returns {void}
-   */
-  showAITools() {
-    this.modalManager.showAITools();
-  }
-
-  /**
-   * Generate an image using AI from prompt
-   * @returns {Promise<void>}
-   */
-  async generateAIImage() {
-    const aiPromptEl = document.getElementById('aiPrompt');
-    if (!(aiPromptEl instanceof HTMLInputElement)) {
-      return;
-    }
-    const prompt = aiPromptEl.value.trim();
-    if (!prompt) {
-      alert('Please describe what you want to draw!');
-      return;
-    }
-
-    try {
-      const img = await this.aiManager.generateImage(prompt);
-      this.drawingManager.drawImage(img);
-      this.modalManager.closeAITools();
-      this.modalManager.showStatusWithClose(
-        '✨ Perfect!',
-        'Your AI artwork is ready! You can save or print it.'
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      alert('❌ ' + message);
-    }
-  }
 
   /**
    * Start camera capture
