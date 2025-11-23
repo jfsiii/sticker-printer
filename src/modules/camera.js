@@ -1,5 +1,5 @@
 import { html, render } from 'lit';
-import { PRINTER_CONFIG } from './constants.js';
+import { CANVAS_CONFIG } from './constants.js';
 import { ModalManager } from './modals.js';
 import { AppModal } from '../components/app-modal.js';
 
@@ -168,7 +168,7 @@ export class CameraManager {
     }
 
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = PRINTER_CONFIG.WIDTH;
+    tempCanvas.width = CANVAS_CONFIG.WIDTH;
     tempCanvas.height = 400;
 
     const tempCtx = tempCanvas.getContext('2d');
@@ -176,7 +176,7 @@ export class CameraManager {
       throw new Error('Could not get 2D context from canvas');
     }
 
-    const targetRatio = PRINTER_CONFIG.WIDTH / 400;
+    const targetRatio = CANVAS_CONFIG.WIDTH / 400;
     const videoRatio = videoWidth / videoHeight;
 
     let sx, sy, sWidth, sHeight;
@@ -201,7 +201,7 @@ export class CameraManager {
       sHeight,
       0,
       0,
-      PRINTER_CONFIG.WIDTH,
+      CANVAS_CONFIG.WIDTH,
       400
     );
 

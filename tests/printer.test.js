@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PrinterManager } from '../src/modules/printer.js';
-import { PRINTER_CONFIG } from '../src/modules/constants.js';
+import { PRINTER_CONFIGS, PRINTER_MODELS } from '../src/modules/constants.js';
 
 describe('PrinterManager', () => {
   /** @type {PrinterManager} */
@@ -90,19 +90,27 @@ describe('PrinterManager', () => {
   describe('canvasToBitmap', () => {
     it('should convert canvas to bitmap array', () => {
       const canvas = document.createElement('canvas');
-      canvas.width = PRINTER_CONFIG.WIDTH;
+      const testConfig = PRINTER_CONFIGS[PRINTER_MODELS.T02];
+      canvas.width = testConfig.WIDTH;
       canvas.height = 100;
+
+      // Set up printer config
+      printerManager.config = testConfig;
 
       const bitmap = printerManager.canvasToBitmap(canvas);
 
       expect(bitmap).toHaveLength(100); // Height
-      expect(bitmap[0]).toHaveLength(PRINTER_CONFIG.BYTES_PER_LINE);
+      expect(bitmap[0]).toHaveLength(testConfig.BYTES_PER_LINE);
     });
 
     it('should convert white pixels to 0 bits', () => {
       const canvas = document.createElement('canvas');
-      canvas.width = PRINTER_CONFIG.WIDTH;
+      const testConfig = PRINTER_CONFIGS[PRINTER_MODELS.T02];
+      canvas.width = testConfig.WIDTH;
       canvas.height = 1;
+
+      // Set up printer config
+      printerManager.config = testConfig;
 
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Context should exist');
@@ -124,6 +132,9 @@ describe('PrinterManager', () => {
       canvas.width = 8; // Just one byte
       canvas.height = 1;
 
+      // Set up printer config
+      printerManager.config = PRINTER_CONFIGS[PRINTER_MODELS.T02];
+
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Context should exist');
 
@@ -138,14 +149,31 @@ describe('PrinterManager', () => {
     });
 
     it('should throw error if context cannot be obtained', () => {
+      const testConfig = PRINTER_CONFIGS[PRINTER_MODELS.T02];
       const mockCanvas = /** @type {HTMLCanvasElement} */ ({
-        width: PRINTER_CONFIG.WIDTH,
+        width: testConfig.WIDTH,
         height: 100,
         getContext: () => null,
       });
 
+      // Set up printer config
+      printerManager.config = testConfig;
+
       expect(() => printerManager.canvasToBitmap(mockCanvas)).toThrow(
         'Could not get 2D context from canvas'
+      );
+    });
+
+    it('should throw error if printer not configured', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 384;
+      canvas.height = 100;
+
+      // No config set
+      printerManager.config = null;
+
+      expect(() => printerManager.canvasToBitmap(canvas)).toThrow(
+        'Printer not configured'
       );
     });
   });
@@ -158,12 +186,15 @@ describe('PrinterManager', () => {
     });
 
     it('should send data in chunks', async () => {
+      const testConfig = PRINTER_CONFIGS[PRINTER_MODELS.T02];
       const mockWrite = vi.fn().mockResolvedValue(undefined);
       printerManager.writeCharacteristic = /** @type {BluetoothRemoteGATTCharacteristic} */ ({
         writeValue: mockWrite,
+        properties: { write: true, writeWithoutResponse: false },
       });
+      printerManager.config = testConfig;
 
-      const data = new Array(PRINTER_CONFIG.MTU_SIZE * 2 + 10).fill(0);
+      const data = new Array(testConfig.MTU_SIZE * 2 + 10).fill(0);
       await printerManager.sendData(data);
 
       // Should be called 3 times (2 full chunks + 1 partial)
@@ -171,16 +202,19 @@ describe('PrinterManager', () => {
     });
 
     it('should send correct chunk sizes', async () => {
+      const testConfig = PRINTER_CONFIGS[PRINTER_MODELS.T02];
       const mockWrite = vi.fn().mockResolvedValue(undefined);
       printerManager.writeCharacteristic = /** @type {BluetoothRemoteGATTCharacteristic} */ ({
         writeValue: mockWrite,
+        properties: { write: true, writeWithoutResponse: false },
       });
+      printerManager.config = testConfig;
 
-      const data = new Array(PRINTER_CONFIG.MTU_SIZE + 10).fill(0);
+      const data = new Array(testConfig.MTU_SIZE + 10).fill(0);
       await printerManager.sendData(data);
 
       // First chunk should be MTU_SIZE
-      expect(mockWrite.mock.calls[0][0]).toHaveLength(PRINTER_CONFIG.MTU_SIZE);
+      expect(mockWrite.mock.calls[0][0]).toHaveLength(testConfig.MTU_SIZE);
       // Second chunk should be 10
       expect(mockWrite.mock.calls[1][0]).toHaveLength(10);
     });
@@ -189,7 +223,9 @@ describe('PrinterManager', () => {
       const mockWrite = vi.fn().mockRejectedValue(new Error('Write failed'));
       printerManager.writeCharacteristic = /** @type {BluetoothRemoteGATTCharacteristic} */ ({
         writeValue: mockWrite,
+        properties: { write: true, writeWithoutResponse: false },
       });
+      printerManager.config = PRINTER_CONFIGS[PRINTER_MODELS.T02];
 
       await expect(printerManager.sendData([1, 2, 3])).rejects.toThrow('Write failed');
     });
