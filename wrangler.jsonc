@@ -1,0 +1,7 @@
+{
+  "name": "sticker-printer",
+  "compatibility_date": "2025-11-22",
+  "assets": {
+    "directory": "dist/"
+  }
+}
