@@ -1,4 +1,3 @@
-import './styles/main.css';
 import { DrawingManager } from './modules/drawing.js';
 import { PrinterManager } from './modules/printer.js';
 import { ModalManager } from './modules/modals.js';
